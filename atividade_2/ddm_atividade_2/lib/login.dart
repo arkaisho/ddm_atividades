@@ -29,78 +29,81 @@ class _LoginPageState extends State<LoginPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 30),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextFormField(
-              controller: emailController,
-              decoration: const InputDecoration(
-                hintText: "e-mail",
-                label: Text("e-mail"),
+        child: Form(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextFormField(
+                controller: emailController,
+                textInputAction: TextInputAction.next,
+                decoration: const InputDecoration(
+                  hintText: "e-mail",
+                  label: Text("e-mail"),
+                ),
               ),
-            ),
-            TextFormField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                hintText: "password",
-                label: Text("password"),
+              TextFormField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  hintText: "password",
+                  label: Text("password"),
+                ),
               ),
-            ),
-            Text(
-              errorText,
-              style: TextStyle(color: Colors.red),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 20),
-              child: ElevatedButton(
-                child: const Text("Entrar"),
-                onPressed: () async {
-                  try {
-                    UserCredential userCredential =
-                        await FirebaseAuth.instance.signInWithEmailAndPassword(
-                      email: emailController.text,
-                      password: passwordController.text,
-                    );
-                    if (FirebaseAuth.instance.currentUser != null) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const ListPage(),
-                        ),
+              Text(
+                errorText,
+                style: const TextStyle(color: Colors.red),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 20),
+                child: ElevatedButton(
+                  child: const Text("Entrar"),
+                  onPressed: () async {
+                    try {
+                      await FirebaseAuth.instance.signInWithEmailAndPassword(
+                        email: emailController.text,
+                        password: passwordController.text,
                       );
+                      if (FirebaseAuth.instance.currentUser != null) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const ListPage(),
+                          ),
+                        );
+                      }
+                    } on FirebaseAuthException catch (e) {
+                      if (e.code == 'user-not-found') {
+                        setState(() {
+                          errorText = ('No user found for that email.');
+                        });
+                      } else if (e.code == 'wrong-password') {
+                        setState(() {
+                          errorText =
+                              ('Wrong password provided for that user.');
+                        });
+                      } else {
+                        setState(() {
+                          errorText = ("Unknown error.");
+                        });
+                      }
                     }
-                  } on FirebaseAuthException catch (e) {
-                    if (e.code == 'user-not-found') {
-                      setState(() {
-                        errorText = ('No user found for that email.');
-                      });
-                    } else if (e.code == 'wrong-password') {
-                      setState(() {
-                        errorText = ('Wrong password provided for that user.');
-                      });
-                    } else {
-                      setState(() {
-                        errorText = ("Unknown error.");
-                      });
-                    }
-                  }
-                },
+                  },
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 20),
-              child: InkWell(
-                child: const Text("Registrar"),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const RegistrationPage(),
-                    ),
-                  );
-                },
-              ),
-            )
-          ],
+              Padding(
+                padding: const EdgeInsets.only(top: 20),
+                child: InkWell(
+                  child: const Text("Registrar"),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const RegistrationPage(),
+                      ),
+                    );
+                  },
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );

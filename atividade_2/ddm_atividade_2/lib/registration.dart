@@ -1,4 +1,3 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -28,57 +27,60 @@ class _RegistrationPageState extends State<RegistrationPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 30),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextFormField(
-              controller: emailController,
-              decoration: const InputDecoration(
-                hintText: "e-mail",
-                label: Text("e-mail"),
+        child: Form(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextFormField(
+                controller: emailController,
+                textInputAction: TextInputAction.next,
+                decoration: const InputDecoration(
+                  hintText: "e-mail",
+                  label: Text("e-mail"),
+                ),
               ),
-            ),
-            TextFormField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                hintText: "password",
-                label: Text("password"),
+              TextFormField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  hintText: "password",
+                  label: Text("password"),
+                ),
               ),
-            ),
-            Text(
-              errorText,
-              style: TextStyle(color: Colors.red),
-            ),
-            ElevatedButton(
-              child: const Text("Registrar"),
-              onPressed: () async {
-                try {
-                  UserCredential userCredential = await FirebaseAuth.instance
-                      .createUserWithEmailAndPassword(
-                    email: emailController.text,
-                    password: passwordController.text,
-                  );
-                  if (FirebaseAuth.instance.currentUser != null) {
-                    Navigator.of(context).pop();
+              Text(
+                errorText,
+                style: const TextStyle(color: Colors.red),
+              ),
+              ElevatedButton(
+                child: const Text("Registrar"),
+                onPressed: () async {
+                  try {
+                    await FirebaseAuth.instance.createUserWithEmailAndPassword(
+                      email: emailController.text,
+                      password: passwordController.text,
+                    );
+                    if (FirebaseAuth.instance.currentUser != null) {
+                      Navigator.of(context).pop();
+                    }
+                  } on FirebaseAuthException catch (e) {
+                    if (e.code == 'weak-password') {
+                      setState(() {
+                        errorText = ('The password provided is too weak.');
+                      });
+                    } else if (e.code == 'email-already-in-use') {
+                      setState(() {
+                        errorText =
+                            ('The account already exists for that email.');
+                      });
+                    }
+                  } catch (e) {
+                    // ignore: avoid_print
+                    print(e);
                   }
-                } on FirebaseAuthException catch (e) {
-                  if (e.code == 'weak-password') {
-                    setState(() {
-                      errorText = ('The password provided is too weak.');
-                    });
-                  } else if (e.code == 'email-already-in-use') {
-                    setState(() {
-                      errorText =
-                          ('The account already exists for that email.');
-                    });
-                  }
-                } catch (e) {
-                  print(e);
-                }
-              },
-            )
-          ],
+                },
+              )
+            ],
+          ),
         ),
       ),
     );

@@ -10,6 +10,16 @@ class ListPage extends StatefulWidget {
 }
 
 class _ListPageState extends State<ListPage> {
+  Data data = Data();
+
+  List<Item> itemsOnList = [];
+
+  @override
+  void didChangeDependencies() {
+    fetchList();
+    super.didChangeDependencies();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -22,24 +32,40 @@ class _ListPageState extends State<ListPage> {
           showAddModalBottomSheet(context);
         },
       ),
-      body: Column(
-        children: Data.itemsOnList
-            .map(
-              (item) => ListItemTile(
-                item: Item(
-                  title: item.title,
-                  description: item.description,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await fetchList();
+        },
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: itemsOnList
+              .map(
+                (item) => ListItemTile(
+                  item: Item(
+                    id: item.id,
+                    title: item.title,
+                    description: item.description,
+                  ),
+                  onDelete: () async {
+                    await data.deleteItem(item.id);
+                    await fetchList();
+                  },
+                  onEdit: () {
+                    showEditModalBottomSheet(context, item);
+                  },
                 ),
-                onDelete: () {
-                  setState(() {
-                    Data.itemsOnList.remove(item);
-                  });
-                },
-              ),
-            )
-            .toList(),
+              )
+              .toList(),
+        ),
       ),
     );
+  }
+
+  Future fetchList() async {
+    var aux = await data.items();
+    setState(() {
+      itemsOnList = aux;
+    });
   }
 
   void showAddModalBottomSheet(BuildContext context) {
@@ -55,42 +81,44 @@ class _ListPageState extends State<ListPage> {
               width: MediaQuery.of(context).size.width - 20,
               child: Padding(
                 padding: const EdgeInsets.all(10),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    TextFormField(
-                      controller: titleController,
-                      decoration: const InputDecoration(
-                        hintText: "Titulo",
-                        label: Text("Titulo"),
+                child: Form(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      TextFormField(
+                        controller: titleController,
+                        textInputAction: TextInputAction.next,
+                        decoration: const InputDecoration(
+                          hintText: "Titulo",
+                          label: Text("Titulo"),
+                        ),
                       ),
-                    ),
-                    TextFormField(
-                      controller: descriptionController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        hintText: "Descrição",
-                        label: Text("Descrição"),
+                      TextFormField(
+                        controller: descriptionController,
+                        decoration: const InputDecoration(
+                          hintText: "Descrição",
+                          label: Text("Descrição"),
+                        ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 20),
-                      child: ElevatedButton(
-                        child: const Text("Salvar"),
-                        onPressed: () {
-                          setState(() {
-                            Data.itemsOnList.add(
+                      Padding(
+                        padding: const EdgeInsets.only(top: 20),
+                        child: ElevatedButton(
+                          child: const Text("Salvar"),
+                          onPressed: () async {
+                            await data.insertItem(
                               Item(
+                                id: await data.getNextId(),
                                 title: titleController.text,
                                 description: descriptionController.text,
                               ),
                             );
-                          });
-                          Navigator.of(context).pop();
-                        },
+                            fetchList();
+                            Navigator.of(context).pop();
+                          },
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -100,9 +128,11 @@ class _ListPageState extends State<ListPage> {
     );
   }
 
-  void showEditModalBottomSheet(BuildContext context) {
+  void showEditModalBottomSheet(BuildContext context, Item item) {
     TextEditingController titleController = TextEditingController();
     TextEditingController descriptionController = TextEditingController();
+    titleController.text = item.title;
+    descriptionController.text = item.description;
     showDialog(
       context: context,
       builder: (context) {
@@ -113,42 +143,44 @@ class _ListPageState extends State<ListPage> {
               width: MediaQuery.of(context).size.width - 20,
               child: Padding(
                 padding: const EdgeInsets.all(10),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    TextFormField(
-                      controller: titleController,
-                      decoration: const InputDecoration(
-                        hintText: "Titulo",
-                        label: Text("Titulo"),
+                child: Form(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      TextFormField(
+                        controller: titleController,
+                        textInputAction: TextInputAction.next,
+                        decoration: const InputDecoration(
+                          hintText: "Titulo",
+                          label: Text("Titulo"),
+                        ),
                       ),
-                    ),
-                    TextFormField(
-                      controller: descriptionController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        hintText: "Descrição",
-                        label: Text("Descrição"),
+                      TextFormField(
+                        controller: descriptionController,
+                        decoration: const InputDecoration(
+                          hintText: "Descrição",
+                          label: Text("Descrição"),
+                        ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 20),
-                      child: ElevatedButton(
-                        child: const Text("Salvar"),
-                        onPressed: () {
-                          setState(() {
-                            Data.itemsOnList.add(
+                      Padding(
+                        padding: const EdgeInsets.only(top: 20),
+                        child: ElevatedButton(
+                          child: const Text("Salvar"),
+                          onPressed: () async {
+                            await data.updateItem(
                               Item(
+                                id: item.id,
                                 title: titleController.text,
                                 description: descriptionController.text,
                               ),
                             );
-                          });
-                          Navigator.of(context).pop();
-                        },
+                            await fetchList();
+                            Navigator.of(context).pop();
+                          },
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -162,10 +194,12 @@ class _ListPageState extends State<ListPage> {
 class ListItemTile extends StatefulWidget {
   final Item item;
   final Function onDelete;
+  final Function onEdit;
 
   const ListItemTile({
     required this.item,
     required this.onDelete,
+    required this.onEdit,
     Key? key,
   }) : super(key: key);
 
@@ -193,7 +227,7 @@ class _ListItemTileState extends State<ListItemTile> {
               children: [
                 IconButton(
                   onPressed: () {
-                    Data.itemsOnList.remove(widget.item);
+                    widget.onEdit();
                   },
                   icon: const Icon(Icons.edit),
                 ),
